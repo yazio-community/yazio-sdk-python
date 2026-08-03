@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: YAZIO API
-  version: 0.0.0-dev
+  version: 0.1.0
   description: |-
     An unofficial description of the private API behind the YAZIO food-diary app,
     covering version 22 of the API at https://yzapi.yazio.com.
@@ -38,46 +38,47 @@ info:
     url: https://opensource.org/licenses/MIT
   x-api-version: 22
 servers:
-  - url: https://yzapi.yazio.com
-    description: The default server
+- url: https://yzapi.yazio.com
+  description: The default server
 tags:
-  - name: Authentication
-    description: OAuth token issuance and refresh.
-  - name: User
-    description: Account profile, settings, preferences and account-level state.
-  - name: Goals
-    description: Daily nutrition, activity and body goals.
-  - name: Diary
-    description: Daily log of consumed items, water intake, feelings and meal images.
-  - name: Body Values
-    description: Weight and other tracked body measurements.
-  - name: Activity
-    description: Exercises, steps and activity energy.
-  - name: Products
-    description: Food product lookup and suggestions.
-  - name: Recipes
-    description: User-created and YAZIO recipes, plus recipe favorites.
-  - name: Fasting
-    description: Fasting countdown templates, active countdowns and history.
-  - name: Buddies
-    description: Buddy list and shared buddy progress.
-  - name: Streaks
-    description: Tracking streaks and streak recovery.
-  - name: Rewards & Shop
-    description: Wallet currencies, claimables and shop items.
-  - name: Subscriptions
-    description: Premium subscription state and history.
-  - name: Insights
-    description: AI-generated daily and meal-summary tips.
-  - name: Widgets
-    description: Aggregated summaries for home-screen widgets.
-  - name: Content
-    description: Editorial content such as recipe indexes and success stories.
+- name: Authentication
+  description: OAuth token issuance and refresh.
+- name: User
+  description: Account profile, settings, preferences and account-level state.
+- name: Goals
+  description: Daily nutrition, activity and body goals.
+- name: Diary
+  description: Daily log of consumed items, water intake, feelings and meal 
+    images.
+- name: Body Values
+  description: Weight and other tracked body measurements.
+- name: Activity
+  description: Exercises, steps and activity energy.
+- name: Products
+  description: Food product lookup and suggestions.
+- name: Recipes
+  description: User-created and YAZIO recipes, plus recipe favorites.
+- name: Fasting
+  description: Fasting countdown templates, active countdowns and history.
+- name: Buddies
+  description: Buddy list and shared buddy progress.
+- name: Streaks
+  description: Tracking streaks and streak recovery.
+- name: Rewards & Shop
+  description: Wallet currencies, claimables and shop items.
+- name: Subscriptions
+  description: Premium subscription state and history.
+- name: Insights
+  description: AI-generated daily and meal-summary tips.
+- name: Widgets
+  description: Aggregated summaries for home-screen widgets.
+- name: Content
+  description: Editorial content such as recipe indexes and success stories.
 paths:
   /v22/user/pending-notifications/flush:
     post:
       tags:
-        - User
+      - User
       operationId: flushPendingNotifications
       summary: Deliver and clear queued notifications
       responses:
@@ -90,7 +91,7 @@ paths:
   /v22/user:
     get:
       tags:
-        - User
+      - User
       operationId: getUser
       summary: The authenticated user's profile
       responses:
@@ -103,7 +104,7 @@ paths:
   /v22/fasting-countdowns/templates:
     get:
       tags:
-        - Fasting
+      - Fasting
       operationId: listFastingTemplates
       summary: Available fasting plans
       responses:
@@ -116,20 +117,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/FastingTemplateCategory'
       parameters:
-        - name: energyunit
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: locale
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: energyunit
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/fasting-countdowns/history:
     get:
       tags:
-        - Fasting
+      - Fasting
       operationId: getFastingHistory
       summary: Completed fasting periods
       responses:
@@ -143,7 +144,7 @@ paths:
   /v22/user/fasting-countdowns:
     get:
       tags:
-        - Fasting
+      - Fasting
       operationId: getFastingCountdowns
       summary: The user's active fasting countdowns
       responses:
@@ -153,7 +154,7 @@ paths:
   /v22/user/changes-indicator:
     get:
       tags:
-        - User
+      - User
       operationId: getChangesIndicator
       summary: Timestamps telling a client what to re-fetch
       responses:
@@ -166,7 +167,7 @@ paths:
   /v22/user/wallet:
     get:
       tags:
-        - Rewards & Shop
+      - Rewards & Shop
       operationId: getWallet
       summary: The user's credit balance
       responses:
@@ -179,7 +180,7 @@ paths:
   /v22/user/claimables:
     get:
       tags:
-        - Rewards & Shop
+      - Rewards & Shop
       operationId: listClaimables
       summary: Rewards waiting to be claimed
       responses:
@@ -192,7 +193,7 @@ paths:
   /v22/buddies:
     get:
       tags:
-        - Buddies
+      - Buddies
       operationId: listBuddies
       summary: List the user's buddies
       responses:
@@ -207,7 +208,7 @@ paths:
   /v22/user/exercises:
     get:
       tags:
-        - Activity
+      - Activity
       operationId: listExercises
       summary: List logged exercises for a day
       responses:
@@ -218,14 +219,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ExerciseLog'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
     post:
       tags:
-        - Activity
+      - Activity
       operationId: logExercise
       summary: Log an exercise
       responses:
@@ -240,7 +241,7 @@ paths:
   /v22/user/subscription/latest:
     get:
       tags:
-        - Subscriptions
+      - Subscriptions
       operationId: getLatestSubscription
       summary: The most recent subscription record
       responses:
@@ -253,7 +254,7 @@ paths:
   /v22/buddies/{id}:
     get:
       tags:
-        - Buddies
+      - Buddies
       operationId: getBuddy
       summary: A buddy's profile and recent activity
       responses:
@@ -264,15 +265,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Buddy'
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/user/widgets/daily-summary:
     get:
       tags:
-        - Widgets
+      - Widgets
       operationId: getDailySummaryWidget
       summary: The home screen daily summary
       responses:
@@ -283,15 +284,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/DailySummaryWidget'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/consumed-items:
     get:
       tags:
-        - Diary
+      - Diary
       operationId: listConsumedItems
       summary: Everything logged for a day
       responses:
@@ -302,14 +303,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ConsumedItems'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
     post:
       tags:
-        - Diary
+      - Diary
       operationId: addConsumedItems
       summary: Log products, recipe portions or simple entries
       responses:
@@ -323,7 +324,7 @@ paths:
               $ref: '#/components/schemas/ConsumedItems'
     delete:
       tags:
-        - Diary
+      - Diary
       operationId: deleteConsumedItem
       summary: Remove one logged entry
       responses:
@@ -338,7 +339,7 @@ paths:
   /v22/user/water-intake:
     get:
       tags:
-        - Diary
+      - Diary
       operationId: getWaterIntake
       summary: Water logged for a day
       responses:
@@ -349,14 +350,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/WaterIntake'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
     post:
       tags:
-        - Diary
+      - Diary
       operationId: setWaterIntake
       summary: Set the water logged for a day
       responses:
@@ -373,7 +374,7 @@ paths:
   /v22/user/feeling:
     get:
       tags:
-        - Diary
+      - Diary
       operationId: getFeeling
       summary: The feeling logged for a day
       responses:
@@ -384,15 +385,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/Feeling'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/bodyvalues/weight/last:
     get:
       tags:
-        - Body Values
+      - Body Values
       operationId: getLatestWeight
       summary: The most recent weight entry on or before a date
       responses:
@@ -403,15 +404,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/WeightEntry'
       parameters:
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: true
+        schema:
+          type: string
   /v22/user/meal-images/{date}:
     get:
       tags:
-        - Diary
+      - Diary
       operationId: listMealImages
       summary: Meal photos for a day
       responses:
@@ -422,15 +423,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/MealImages'
       parameters:
-        - name: date
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: date
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/user/goals/unmodified:
     get:
       tags:
-        - Goals
+      - Goals
       operationId: getUnmodifiedGoals
       summary: Daily goals as calculated, before any manual override
       responses:
@@ -441,15 +442,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/DailyGoals'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/goals:
     get:
       tags:
-        - Goals
+      - Goals
       operationId: getGoals
       summary: The user's daily goals
       responses:
@@ -460,15 +461,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/DailyGoals'
       parameters:
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/consumed-items/nutrients-daily:
     get:
       tags:
-        - Diary
+      - Diary
       operationId: getDailyNutrients
       summary: Nutrient totals per day
       responses:
@@ -481,20 +482,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/DailyNutrients'
       parameters:
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: end
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: start
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/exercises/summary-daily:
     get:
       tags:
-        - Activity
+      - Activity
       operationId: getDailyExerciseSummary
       summary: Daily totals of logged exercise
       responses:
@@ -507,20 +508,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/DailyExerciseSummary'
       parameters:
-        - name: start
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: end
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: start
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: end
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/products/suggested:
     get:
       tags:
-        - Products
+      - Products
       operationId: listSuggestedProducts
       summary: Products suggested for a meal slot
       responses:
@@ -533,20 +534,20 @@ paths:
                 items:
                   $ref: '#/components/schemas/SuggestedProduct'
       parameters:
-        - name: daytime
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: date
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: daytime
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: date
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/products/{id}:
     get:
       tags:
-        - Products
+      - Products
       operationId: getProduct
       summary: A product and its nutrients
       responses:
@@ -557,14 +558,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Product'
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
     options:
       tags:
-        - Products
+      - Products
       operationId: getProductOptions
       summary: Allowed methods for a product resource
       responses:
@@ -572,15 +573,15 @@ paths:
           description: OK
           content: {}
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/user/recipes:
     post:
       tags:
-        - Recipes
+      - Recipes
       operationId: createUserRecipe
       summary: Create a recipe
       responses:
@@ -594,7 +595,7 @@ paths:
               $ref: '#/components/schemas/RecipeDraft'
     get:
       tags:
-        - Recipes
+      - Recipes
       operationId: listUserRecipes
       summary: Recipes the user created
       responses:
@@ -609,7 +610,7 @@ paths:
   /v22/user/recipes/{id}:
     delete:
       tags:
-        - Recipes
+      - Recipes
       operationId: deleteUserRecipe
       summary: Delete one of the user's recipes
       responses:
@@ -617,15 +618,15 @@ paths:
           description: Removed
           content: {}
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/recipes/{id}:
     get:
       tags:
-        - Recipes
+      - Recipes
       operationId: getRecipe
       summary: A public recipe
       responses:
@@ -636,18 +637,20 @@ paths:
               schema:
                 $ref: '#/components/schemas/Recipe'
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/products/search:
     get:
       tags:
-        - Products
+      - Products
       operationId: searchProducts
       summary: Search products by text or barcode
-      description: Free-text or barcode search. Results are ranked by the request's `Accept-Language`, so the same query answers differently for a German and an English client.
+      description: Free-text or barcode search. Results are ranked by the 
+        request's `Accept-Language`, so the same query answers differently for a
+        German and an English client.
       responses:
         '200':
           description: ''
@@ -658,30 +661,30 @@ paths:
                 items:
                   $ref: '#/components/schemas/ProductSearchResult'
       parameters:
-        - name: query
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: sex
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: countries
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: locales
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: query
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: sex
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: countries
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: locales
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/claimables/autoclaim:
     post:
       tags:
-        - Rewards & Shop
+      - Rewards & Shop
       operationId: autoclaimRewards
       summary: Claim every outstanding reward
       responses:
@@ -696,7 +699,7 @@ paths:
   /v22/user/streak/{date}:
     post:
       tags:
-        - Streaks
+      - Streaks
       operationId: updateStreak
       summary: Record streak activity for a date
       responses:
@@ -704,11 +707,11 @@ paths:
           description: OK
           content: {}
       parameters:
-        - name: date
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: date
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -717,7 +720,7 @@ paths:
   /v22/user/subscription:
     get:
       tags:
-        - Subscriptions
+      - Subscriptions
       operationId: getSubscription
       summary: The user's subscription state
       responses:
@@ -732,7 +735,7 @@ paths:
   /v22/user/insight/meal-summary-tips:
     post:
       tags:
-        - Insights
+      - Insights
       operationId: requestMealSummaryTips
       summary: Coaching tips about a logged meal
       responses:
@@ -747,7 +750,7 @@ paths:
   /v22/user/insight/meal-summary-tips/{id}:
     get:
       tags:
-        - Insights
+      - Insights
       operationId: getMealSummaryTip
       summary: One meal summary tip by id
       responses:
@@ -758,15 +761,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/MealSummaryTips'
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/user/bodyvalues:
     post:
       tags:
-        - Body Values
+      - Body Values
       operationId: createBodyValue
       summary: Record a body value
       responses:
@@ -780,7 +783,7 @@ paths:
               $ref: '#/components/schemas/BodyValueEntry'
     delete:
       tags:
-        - Body Values
+      - Body Values
       operationId: deleteBodyValue
       summary: Delete a body value
       responses:
@@ -797,7 +800,7 @@ paths:
   /v22/user/bodyvalues/{id}:
     put:
       tags:
-        - Body Values
+      - Body Values
       operationId: updateBodyValue
       summary: Replace a body value
       responses:
@@ -805,11 +808,11 @@ paths:
           description: OK
           content: {}
       parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
       requestBody:
         content:
           application/json:
@@ -818,7 +821,7 @@ paths:
   /v22/user/streak:
     get:
       tags:
-        - Streaks
+      - Streaks
       operationId: getStreak
       summary: The user's current logging streak
       responses:
@@ -831,7 +834,7 @@ paths:
   /v22/user/shop/items:
     get:
       tags:
-        - Rewards & Shop
+      - Rewards & Shop
       operationId: listShopItems
       summary: Items purchasable with wallet credit
       responses:
@@ -844,7 +847,7 @@ paths:
   /v22/user/insight/daily-tips:
     post:
       tags:
-        - Insights
+      - Insights
       operationId: requestDailyTips
       summary: Daily coaching tips
       responses:
@@ -859,7 +862,7 @@ paths:
   /v22/user/third-party-integration:
     get:
       tags:
-        - User
+      - User
       operationId: getThirdPartyIntegration
       summary: Connected third-party services
       responses:
@@ -872,7 +875,7 @@ paths:
   /v22/oauth/token:
     post:
       tags:
-        - Authentication
+      - Authentication
       operationId: createToken
       summary: Exchange credentials or a refresh token for a bearer token
       responses:
@@ -890,7 +893,7 @@ paths:
   /content/v2/recipes/{country_code}:
     get:
       tags:
-        - Content
+      - Content
       operationId: listFeaturedRecipes
       summary: Editorial recipe collections for a country
       responses:
@@ -903,15 +906,15 @@ paths:
                 items:
                   $ref: '#/components/schemas/RecipeIndexEntry'
       parameters:
-        - name: country_code
-          in: path
-          required: true
-          schema:
-            type: string
+      - name: country_code
+        in: path
+        required: true
+        schema:
+          type: string
   /v22/user/favorites/recipe:
     get:
       tags:
-        - Recipes
+      - Recipes
       operationId: listFavoriteRecipes
       summary: Recipes the user favourited
       responses:
@@ -925,7 +928,7 @@ paths:
   /v22/user/settings:
     get:
       tags:
-        - User
+      - User
       operationId: getSettings
       summary: The user's app settings
       responses:
@@ -938,7 +941,7 @@ paths:
   /v22/user/crm/initialize:
     post:
       tags:
-        - User
+      - User
       operationId: initializeCrm
       summary: Register the client with the CRM
       responses:
@@ -948,7 +951,7 @@ paths:
   /content/v2/success-stories:
     get:
       tags:
-        - Content
+      - Content
       operationId: listSuccessStories
       summary: Editorial success stories
       responses:
@@ -960,25 +963,25 @@ paths:
                 type: array
                 items: {}
       parameters:
-        - name: locale
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: sex
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: goal
-          in: query
-          required: false
-          schema:
-            type: string
+      - name: locale
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: sex
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: goal
+        in: query
+        required: false
+        schema:
+          type: string
   /v22/user/key-value-store:
     get:
       tags:
-        - User
+      - User
       operationId: getKeyValueStore
       summary: Arbitrary client-stored settings
       responses:
@@ -991,7 +994,7 @@ paths:
   /v22/user/dietary-preferences:
     get:
       tags:
-        - User
+      - User
       operationId: getDietaryPreferences
       summary: Diet and food preferences
       responses:
@@ -1004,7 +1007,7 @@ paths:
   /v22/user/unlocked-features:
     get:
       tags:
-        - User
+      - User
       operationId: getUnlockedFeatures
       summary: Features the account has
       responses:
@@ -1499,7 +1502,11 @@ components:
           type: array
           items: {}
     ConsumedItemsDeletion:
-      description: Body of DELETE /v22/user/consumed-items. Each property names one entry by id, as a single string rather than a list — passing an array is rejected with "This value should be of type string". Note that the endpoint also accepts an `?id=` query parameter, answers 204, and does nothing at all.
+      description: Body of DELETE /v22/user/consumed-items. Each property names 
+        one entry by id, as a single string rather than a list — passing an 
+        array is rejected with "This value should be of type string". Note that 
+        the endpoint also accepts an `?id=` query parameter, answers 204, and 
+        does nothing at all.
       type: object
       properties:
         products:
@@ -1593,7 +1600,9 @@ components:
         serving_quantity:
           type: number
     Product:
-      description: Response of GET /v22/products/{id}. Absent from the capture, which only recorded an OPTIONS preflight; filled in from a live response. Note that the body carries no id of its own.
+      description: Response of GET /v22/products/{id}. Absent from the capture, 
+        which only recorded an OPTIONS preflight; filled in from a live 
+        response. Note that the body carries no id of its own.
       type: object
       properties:
         name:
@@ -1999,15 +2008,18 @@ components:
           type: string
         grant_type:
           type: string
-          description: '`password` to exchange credentials for a token, `refresh_token` to renew one.'
+          description: '`password` to exchange credentials for a token, `refresh_token`
+            to renew one.'
           example: password
         client_id:
           type: string
-          description: The client id the mobile app ships with. Identifies the app rather than the user; every install sends the same value.
+          description: The client id the mobile app ships with. Identifies the 
+            app rather than the user; every install sends the same value.
           example: 3_5rbw4kehpugw8ogsc8ck8oo4ogswgckcskc04gcg8kk8k48ssw
         client_secret:
           type: string
-          description: The client secret the mobile app ships with. Not a per-user secret; see `client_id`.
+          description: The client secret the mobile app ships with. Not a 
+            per-user secret; see `client_id`.
           example: 25gdtt1hvdi8gwowoww4oo88sgsw0oo04o0og0kkgwwks8k0k
     OAuthToken:
       type: object
