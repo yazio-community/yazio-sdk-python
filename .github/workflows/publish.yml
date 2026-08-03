@@ -1,76 +1,287 @@
-name: Publish SDK
+name: Release SDK
 
+# One workflow, one path to PyPI: generate from a spec release, prove the
+# result imports, then tag, push, publish and release it.
+#
+# It is a single file on purpose. PyPI's trusted publisher is configured
+# against this *filename* and the `pypi` environment below, so the job that
+# uploads has to live here — and everything that decides *whether* to upload
+# has to run before it, in the same run. The `name:` above is free to change;
+# renaming publish.yml or that environment is not, and breaks authentication
+# with a fairly unhelpful error.
+#
+# The other reason it is one workflow: a tag pushed by a job using the default
+# GITHUB_TOKEN does not start a new workflow run. GitHub blocks that to avoid
+# recursion. So the tag cannot hand off to a separate `on: push: tags` file —
+# it would be created and nothing would happen. Publishing continues in this
+# run instead, which is why no PAT or GitHub App token is needed anywhere.
 on:
-  push:
-    tags: ["v*"]
+  repository_dispatch:
+    types: [spec-released]
+  workflow_dispatch:
+    inputs:
+      spec_tag:
+        description: "Spec release tag to generate from (e.g. v0.2.0)"
+        required: true
+
+# Two spec releases landing at once would otherwise race to push main, and the
+# loser fails after the winner has already uploaded to PyPI. Serialise instead.
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  SPEC_REPO: yazio-community/yazio-api-specification
+  # The tag, not the version. The spec repo sends both because they are
+  # different strings: spec_tag is `v1.4.2` and builds the download URL,
+  # spec_version is `1.4.2` and is what gets published. Using the wrong one
+  # 404s. Nothing here needs spec_version — the asset carries it in
+  # info.version and scripts/generate.sh reads it from there, which is what
+  # makes the published version equal the spec release by construction.
+  SPEC_TAG: ${{ github.event.client_payload.spec_tag || inputs.spec_tag }}
+  # Requires Python >=3.11 itself, which is why generation and the import
+  # check run on different interpreters.
+  GENERATOR: openapi-python-client==0.29.0
+  # httpx and attrs arrive with the generator, but generate.sh imports every
+  # module it wrote and the date/date-time ones need python-dateutil. PyYAML
+  # reads info.version out of the spec.
+  #
+  # ruff is pinned to shell.nix's version. Floating it means the generator's
+  # format post-hook produces different output in CI than locally, and a new
+  # ruff release breaks the build with nothing on our side having changed.
+  TOOLING: python-dateutil PyYAML ruff==0.15.22
+  # Generation only. The generated package supports >=3.10; see the import job.
+  GENERATOR_PYTHON: "3.12"
 
 jobs:
-  build:
+  generate:
+    name: Generate from the spec release
+    # Everything that can say "no" happens here, before anything is written
+    # anywhere. A PyPI version cannot be re-uploaded, so a bad package costs a
+    # tag if caught in this job and the version number permanently if not.
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      surface: ${{ steps.surface.outputs.surface }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
-      - uses: actions/setup-python@v5
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Set up the generator's Python
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: ${{ env.GENERATOR_PYTHON }}
 
-      - name: Regenerate and confirm the tag ships what its spec produces
-        # src/ is committed, so this proves the tagged tree really is what
-        # spec/openapi.yaml generates rather than something hand-edited, and
-        # generate.sh's last step imports every module.
-        #
-        # This is the gate before something irreversible: a PyPI version cannot
-        # be re-uploaded, so a bad package costs a tag if caught here and the
-        # version number permanently if caught after upload.
+      - name: Install the generator and its tooling
+        run: pip install ${{ env.GENERATOR }} ${{ env.TOOLING }}
+
+      - name: Record the public surface before regenerating
+        # From the committed tree, before anything is overwritten — a 170-file
+        # diff shows every changed line but not which imports appeared or
+        # vanished, which is the only part that breaks callers.
+        run: bash scripts/public_surface.sh > /tmp/before.txt
+
+      - name: Download the released spec
         run: |
-          pip install openapi-python-client==0.29.0 python-dateutil PyYAML ruff==0.15.22
-          bash scripts/generate.sh
-          if ! git diff --quiet -- src/; then
-            echo "::error::src/ at this tag does not match spec/openapi.yaml"
-            git diff --stat -- src/
-            exit 1
-          fi
+          curl -sSLf \
+            "https://github.com/${SPEC_REPO}/releases/download/${SPEC_TAG}/openapi.yaml" \
+            -o spec/openapi.yaml
 
-      - name: Check the tag matches the generated version
-        # The version is not written in pyproject.toml — it comes from
-        # src/yazio_sdk/_version.py, which scripts/generate.sh writes from the
-        # spec's info.version. So this checks three things at once: that the tag
-        # matches the code, that the code matches the spec it was generated
-        # from, and that nobody tagged a checkout they forgot to regenerate.
-        #
-        # It matters because PyPI will not let you re-upload a version to fix it.
-        #
-        # 0.0.0-dev is what the spec repo's bundle carries between releases. A
-        # checkout generated from one never went through that repo's release
-        # workflow, so publishing it would put a version on PyPI that no spec
-        # release corresponds to.
+      - name: Regenerate the package
+        # generate.sh's last step imports every module it wrote, so this is
+        # already a smoke test on the generator's Python; the import job
+        # repeats it on both ends of the supported range.
+        run: bash scripts/generate.sh
+
+      - name: Lint everything the generator did not write
+        # ruff skips src/ via extend-exclude — the generator already formatted it.
         run: |
-          version=$(uvx hatch version)
-          tag="${GITHUB_REF_NAME#v}"
+          ruff check .
+          ruff format --check .
 
+      - name: Decide the version and refuse to republish
+        id: version
+        run: |
+          version=$(python3 -c "import yaml;print(yaml.safe_load(open('spec/openapi.yaml'))['info']['version'])")
+
+          # 0.0.0-dev is what the spec repo's bundle carries between releases.
+          # A spec generated from one never went through that repo's release
+          # workflow, so publishing it would put a version on PyPI that no spec
+          # release corresponds to.
           case "$version" in
             *dev*)
-              echo "::error::refusing to publish $version — regenerate from a spec release first"
+              echo "::error::refusing to publish $version — $SPEC_TAG is not a spec release"
               exit 1
               ;;
           esac
 
-          if [ "$tag" != "$version" ]; then
-            echo "::error::tag v$tag does not match generated version $version"
-            echo "the spec in spec/openapi.yaml pins $version — tag v$version instead"
+          # The tag is pushed by this run, so a collision means the version was
+          # already released. Catch it now: after the upload there is no way to
+          # reuse the number, and after the push there is a tag to delete by
+          # hand.
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null 2>&1; then
+            echo "::error::v$version already exists — $SPEC_TAG pins a version that was already released"
             exit 1
           fi
 
-          echo "publishing $version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "publishing $version from spec $SPEC_TAG"
 
-      - run: uv build
-      - uses: actions/upload-artifact@v4
+      - name: Diff the public surface
+        id: surface
+        # There is no PR to read this any more, so it goes to the run summary
+        # and into the GitHub release body. A removal here is a breaking change
+        # for anyone importing the symbol, and nothing else in the pipeline
+        # says so.
+        run: |
+          bash scripts/public_surface.sh > /tmp/after.txt
+
+          {
+            echo "surface<<SURFACE_EOF"
+            if diff -q /tmp/before.txt /tmp/after.txt >/dev/null; then
+              echo "No change to the public surface — descriptions or examples only."
+            else
+              echo '```diff'
+              diff -u /tmp/before.txt /tmp/after.txt | tail -n +3 | grep -E '^[+-]' || true
+              echo '```'
+              if diff /tmp/before.txt /tmp/after.txt | grep -q '^<'; then
+                echo
+                echo "⚠️ Symbols were **removed or renamed**. This breaks callers."
+              fi
+            fi
+            echo "SURFACE_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Write the run summary
+        run: |
+          {
+            echo "## yazio-sdk ${{ steps.version.outputs.version }}"
+            echo
+            echo "Generated from spec [\`$SPEC_TAG\`](https://github.com/$SPEC_REPO/releases/tag/$SPEC_TAG)."
+            echo
+            echo "### What this does to callers"
+            echo
+            echo "${{ steps.surface.outputs.surface }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the spec and the package it produced
+        uses: actions/upload-artifact@v4
+        with:
+          name: package
+          # Both, because they travel together: the spec is what gets committed
+          # and the package is what it produced. Two paths, so the artifact
+          # keeps them at their workspace-relative locations.
+          path: |
+            spec/openapi.yaml
+            src/yazio_sdk/
+          include-hidden-files: true
+
+  imports:
+    name: Import on Python ${{ matrix.python-version }}
+    # The package on both ends of pyproject.toml's requires-python, with
+    # runtime dependencies only — exactly what a user installs, and the only
+    # thing that checks the classifiers are true.
+    #
+    # It takes the generate job's output rather than generating its own:
+    # openapi-python-client needs >=3.11 while the package it produces supports
+    # >=3.10, so 3.10 cannot run the generator.
+    needs: generate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - name: Check out the scripts
+        uses: actions/checkout@v4
+
+      - name: Drop the committed package
+        # Removed rather than merged over: a spec that drops an operation or a
+        # model deletes a file, and downloading on top of the checkout would
+        # leave the stale module in place and importing fine.
+        run: rm -rf src/yazio_sdk
+
+      - name: Download the regenerated package
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: .
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install the runtime dependencies only
+        run: pip install httpx attrs python-dateutil
+
+      - name: Import every module
+        run: PYTHONPATH=src python scripts/verify_imports.py
+
+  tag:
+    name: Commit and tag the release
+    # Past the point of no return. Everything above proved the package holds
+    # together; this puts it on main under a tag and builds what gets uploaded.
+    needs: [generate, imports]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      VERSION: ${{ needs.generate.outputs.version }}
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Drop the committed package
+        # Fresh checkout, so this picks up anything that landed on main while
+        # the checks ran. See the import job for why src/ is removed rather
+        # than written over.
+        run: rm -rf src/yazio_sdk
+
+      - name: Download the regenerated package
+        uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: .
+
+      - name: Commit the regeneration, tag it and push both
+        # main and the tag go up in one atomic push: a tag pointing at a commit
+        # that never reached main would publish a version nobody can check out.
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add spec/openapi.yaml src/yazio_sdk
+          # --allow-empty because a regeneration that changes nothing is still
+          # worth a commit for the tag to point at. It is close to impossible
+          # here — the version alone changes spec/openapi.yaml — but the
+          # alternative is a step that fails on success.
+          git commit --allow-empty -m "Regenerate from spec ${SPEC_TAG}"
+          git tag "v${VERSION}"
+          git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "refs/tags/v${VERSION}"
+
+      - name: Build the sdist and the wheel
+        # From the pushed tree, so both are exactly what the tag contains.
+        # hatchling reads the version out of src/yazio_sdk/_version.py, which
+        # generate.sh wrote from the spec.
+        run: uv build
+
+      - name: Upload the distributions
+        uses: actions/upload-artifact@v4
         with:
           name: dist
           path: dist/
 
   pypi:
-    needs: build
+    name: Publish to PyPI
+    needs: tag
     runs-on: ubuntu-latest
     environment: pypi
     permissions:
@@ -80,26 +291,46 @@ jobs:
       # breaks authentication with a fairly unhelpful error.
       id-token: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download the distributions
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      # Publishes to pypi.org. Add `repository-url: https://test.pypi.org/legacy/`
-      # to rehearse against TestPyPI instead — the two are separate accounts
-      # with separate trusted publishers, so neither configuration carries over.
-      - uses: pypa/gh-action-pypi-publish@release/v1
+
+      - name: Upload to PyPI
+        # Publishes to pypi.org. Add `repository-url: https://test.pypi.org/legacy/`
+        # to rehearse against TestPyPI instead — the two are separate accounts
+        # with separate trusted publishers, so neither configuration carries over.
+        uses: pypa/gh-action-pypi-publish@release/v1
 
   release:
-    needs: pypi
+    name: Publish the GitHub release
+    needs: [generate, tag, pypi]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - name: Download the distributions
+        uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      - uses: softprops/action-gh-release@v2
+
+      - name: Create the release
+        uses: softprops/action-gh-release@v2
         with:
+          # Named explicitly: this run was not triggered by the tag, so there
+          # is no tag in the ref for the action to infer one from.
+          tag_name: v${{ needs.generate.outputs.version }}
           files: dist/*
           generate_release_notes: true
+          body: |
+            Generated from spec [`${{ env.SPEC_TAG }}`](https://github.com/${{ env.SPEC_REPO }}/releases/tag/${{ env.SPEC_TAG }}).
+
+            ## What this does to callers
+
+            Every client function and model as callers import them, before and
+            after. The `src/` diff is a whole regeneration and says nothing
+            useful; this is the part worth reading.
+
+            ${{ needs.generate.outputs.surface }}

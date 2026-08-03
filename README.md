@@ -17,10 +17,9 @@ pip install yazio-sdk
 > by `openapi-python-client`, and the next spec release overwrites the whole
 > tree. Bugs in the client's shape are bugs in the spec — report them there.
 >
-> It is tracked so the repository is installable and the regenerate PRs show
-> what actually changed — but it is written by CI, not committed by hand. The
-> regenerate workflow generates it and commits it into its pull request, and
-> CI fails if regenerating a checkout produces any diff.
+> It is tracked so the repository is installable at any commit — but it is
+> written by CI, not committed by hand. The publish workflow regenerates it
+> from each spec release and commits the result to `main` itself.
 >
 > Run `make generate` after cloning; the result is yours to run against, not
 > to commit.
@@ -133,21 +132,27 @@ hand or a spec was committed without regenerating. Both are fixed by
 `make generate` and committing the result.
 
 There is no test suite. `scripts/generate.sh` imports every module it wrote as
-its last step, so generating is the smoke test, and CI additionally imports the
-committed package under both ends of the supported Python range.
+its last step, so generating is the smoke test, and the publish workflow
+additionally imports the generated package under both ends of the supported
+Python range.
 
-Releases are automated. When the spec repo tags a release it dispatches here,
-which opens a "Regenerate from spec vX.Y.Z" PR. That PR changes one file —
-`spec/openapi.yaml` — so its body carries a **public surface diff** instead:
+Releases are fully automated, with no review step. When the spec repo tags a
+release it dispatches here, and `.github/workflows/publish.yml` regenerates
+from that spec, imports every module on Python 3.10 and 3.13, then commits to
+`main`, tags `vX.Y.Z`, uploads to PyPI via trusted publishing and cuts the
+GitHub release — one run, no human in the loop.
+
+**There is no version to set.** It comes from the spec's `info.version`, so the
+published version equals the spec release by construction. A spec that pins a
+version already tagged here is refused before anything is written, and a
+checkout generated from an unreleased spec reports `0.0.0-dev` and is refused
+too.
+
+The `src/` diff of a regeneration is the whole tree and says nothing useful, so
+the run summary and the release body carry a **public surface diff** instead:
 every client function and model as callers import them, before and after. A
-removal or rename there is a breaking change, and the PR says so.
-
-Review it, merge, then tag the merge commit; the tag publishes via trusted
-publishing. **There is no version to set** — the PR body states the version it
-pinned, and the publish workflow refuses a tag that disagrees with it.
-
-A checkout generated from an unreleased spec reports `0.0.0-dev`, and the
-publish workflow refuses that too.
+removal or rename there is a breaking change, and it says so — after the fact,
+which is the trade for having no review step.
 
 ## Licence
 
