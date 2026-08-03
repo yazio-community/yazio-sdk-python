@@ -1,5 +1,6 @@
 """Contains all the data models used in inputs/outputs"""
 
+from .add_user_recipe_image_body import AddUserRecipeImageBody
 from .autoclaim_request import AutoclaimRequest
 from .body_value_entry import BodyValueEntry
 from .body_value_entry_weight_item import BodyValueEntryWeightItem
@@ -100,6 +101,7 @@ from .weight_entry_external_id_type_0 import WeightEntryExternalIdType0
 from .weight_entry_source_type_0 import WeightEntrySourceType0
 
 __all__ = (
+    "AddUserRecipeImageBody",
     "AutoclaimRequest",
     "BodyValueEntry",
     "BodyValueEntryWeightItem",

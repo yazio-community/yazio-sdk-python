@@ -1,7 +1,7 @@
 openapi: 3.0.0
 info:
   title: YAZIO API
-  version: 0.2.0
+  version: 0.3.0
   description: |-
     An unofficial description of the private API behind the YAZIO food-diary app,
     covering version 22 of the API at https://yzapi.yazio.com.
@@ -622,6 +622,73 @@ paths:
           required: true
           schema:
             type: string
+    put:
+      tags:
+        - Recipes
+      operationId: updateUserRecipe
+      summary: Update one of the user's recipes
+      responses:
+        '204':
+          description: Updated
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeDraft'
+  /v22/user/recipes/{id}/image:
+    delete:
+      tags:
+        - Recipes
+      operationId: deleteUserRecipeImage
+      summary: Remove a recipe's photo
+      responses:
+        '204':
+          description: Removed
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/recipes/{id}/image/{filename}:
+    post:
+      tags:
+        - Recipes
+      operationId: addUserRecipeImage
+      summary: Add a photo to a recipe
+      description: The app generates `filename` itself as a random id plus the original extension, e.g. `a14296b1-5c4b-4201-a6f8-15746c5c9d54.jpg` — it is not returned or read back from anywhere, so any value works.
+      responses:
+        '204':
+          description: Uploaded
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: string
+                  format: binary
   /v22/recipes/{id}:
     get:
       tags:
