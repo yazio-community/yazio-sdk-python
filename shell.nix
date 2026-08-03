@@ -25,7 +25,12 @@ pkgs.mkShell {
   packages = [
     python
     pkgs.openapi-python-client # turns spec/openapi.yaml into src/yazio_sdk/
-    pkgs.ruff # the generator runs this over its own output as a post-hook
+    # The generator runs this over its own output as a post-hook, so its
+    # version is an input to the generated tree rather than just a linter.
+    # The workflows pin the same version explicitly; if nixpkgs moves, update
+    # the pin in pyproject.toml and .github/workflows/ to match, or CI and
+    # local will format the generated code differently.
+    pkgs.ruff
     pkgs.hatch # `hatch version` resolves the dynamic version from _version.py
   ];
 

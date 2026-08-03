@@ -34,11 +34,19 @@ permissions:
 
 env:
   SPEC_REPO: yazio-community/yazio-api-specification
+  # Requires Python >=3.11 itself, which is why generation and the import check
+  # below run on different interpreters.
   GENERATOR: openapi-python-client==0.29.0
   # httpx and attrs arrive with the generator, but generate.sh imports every
   # module it wrote and the date/date-time ones need python-dateutil. PyYAML
   # reads info.version out of the spec.
-  TOOLING: python-dateutil PyYAML ruff
+  #
+  # ruff is pinned to shell.nix's version. Floating it means the generator's
+  # format post-hook produces different output in CI than locally, and a new
+  # ruff release breaks the build with nothing on our side having changed.
+  TOOLING: python-dateutil PyYAML ruff==0.15.22
+  # Generation only. The generated package supports >=3.10; see `check`.
+  GENERATOR_PYTHON: "3.12"
 
 jobs:
   verify:
@@ -47,26 +55,50 @@ jobs:
     # package that imports.
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        # Both ends of the range in pyproject.toml's requires-python. The
-        # classifiers claim 3.10 through 3.13; nothing else checks that.
-        python-version: ["3.10", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.GENERATOR_PYTHON }}
       - run: pip install ${{ env.GENERATOR }} ${{ env.TOOLING }}
       - name: Generate
-        # Ends by importing every module it wrote, under this Python version.
         run: bash scripts/generate.sh
       - name: Lint
         # ruff skips src/ via extend-exclude — the generator already formatted it.
         run: |
           ruff check .
           ruff format --check .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: package
+          path: src/yazio_sdk/
+          include-hidden-files: true
+
+  check:
+    # The generated package on both ends of pyproject.toml's requires-python.
+    # It cannot be generated here: openapi-python-client needs >=3.11 while the
+    # package it produces supports >=3.10, so `verify` generates once on 3.12
+    # and this imports that output under each supported version. Nothing else
+    # checks the classifiers are true.
+    needs: verify
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: package
+          path: src/yazio_sdk/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      # Runtime dependencies only — the generator is deliberately absent.
+      - run: pip install httpx attrs python-dateutil
+      - name: Import every generated module
+        run: PYTHONPATH=src python scripts/verify_imports.py
 
   propose:
     # A new spec release. Generates from it, proves it works, and only then

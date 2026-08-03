@@ -85,23 +85,7 @@ EOF
 fi
 
 echo "==> verifying the generated package imports"
-PYTHONPATH="$repo_root/src${PYTHONPATH:+:$PYTHONPATH}" python3 - <<'PY'
-import importlib
-import pkgutil
-
-import yazio_sdk
-
-failed = []
-for module in pkgutil.walk_packages(yazio_sdk.__path__, f"{yazio_sdk.__name__}."):
-    try:
-        importlib.import_module(module.name)
-    except Exception as exc:  # noqa: BLE001 - report every broken module at once
-        failed.append(f"{module.name}: {exc}")
-
-if failed:
-    raise SystemExit("import errors:\n  " + "\n  ".join(failed))
-
-print(f"ok: yazio-sdk {yazio_sdk.__version__} from spec {yazio_sdk.__spec_version__}")
-PY
+PYTHONPATH="$repo_root/src${PYTHONPATH:+:$PYTHONPATH}" \
+  python3 "$repo_root/scripts/verify_imports.py"
 
 echo "==> done"

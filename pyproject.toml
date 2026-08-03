@@ -46,7 +46,11 @@ Specification = "https://github.com/yazio-community/yazio-api-specification"
 Issues = "https://github.com/yazio-community/yazio-sdk-python/issues"
 
 [dependency-groups]
-dev = ["ruff>=0.6"]
+# Pinned, not floated. openapi-python-client runs `ruff format` over everything
+# it emits as a post-hook, so the ruff version is an input to the generated
+# tree: a newer one reformats all 172 modules and `make check` starts failing
+# on a machine that changed nothing. Keep in step with shell.nix.
+dev = ["ruff==0.15.22"]
 
 [tool.hatch.version]
 # Written by scripts/generate.sh from the spec's info.version. Hatchling's
@@ -67,7 +71,12 @@ line-length = 100
 # business, and lint findings there cannot be fixed without editing generated
 # files. Note this does *not* stop the generator's own post-hook: ruff honours
 # explicitly named paths over excludes, which is what makes the above apply.
-extend-exclude = ["src/"]
+#
+# Markdown is excluded because recent ruff versions format Python code blocks
+# inside it. The README's snippets are illustrative — they use ellipses and
+# omit imports — so formatting them is noise at best, and it made CI fail
+# against a README that passes locally on an older ruff.
+extend-exclude = ["src/", "*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
