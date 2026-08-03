@@ -84,12 +84,10 @@ jobs:
         with:
           name: dist
           path: dist/
+      # Publishes to pypi.org. Add `repository-url: https://test.pypi.org/legacy/`
+      # to rehearse against TestPyPI instead — the two are separate accounts
+      # with separate trusted publishers, so neither configuration carries over.
       - uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          # Rehearsal target. Delete this line to publish to real PyPI — and
-          # note the two are separate accounts with separate pending
-          # publishers, so the one on TestPyPI does not carry over.
-          repository-url: https://test.pypi.org/legacy/
 
   release:
     needs: pypi
