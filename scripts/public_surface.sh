@@ -13,9 +13,17 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 package="${1:-$repo_root/src/yazio_sdk}"
 
+# An absent package has an empty surface. That is the honest answer rather than
+# an error: this script's whole job is to be one side of a before/after diff,
+# and "nothing was here yet" is a real before-state — it is what the regenerate
+# workflow sees on a branch whose package has not been generated into it yet.
+# Every symbol then shows up as an addition, which is correct.
+#
+# The note goes to stderr so an interactive run still says why it printed
+# nothing, without putting anything in the diff.
 if [ ! -d "$package" ]; then
-  echo "error: $package does not exist — run scripts/generate.sh first" >&2
-  exit 1
+  echo "note: $package does not exist — reporting an empty surface" >&2
+  exit 0
 fi
 
 {
