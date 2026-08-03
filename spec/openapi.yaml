@@ -1,0 +1,2078 @@
+openapi: 3.0.0
+info:
+  title: YAZIO API
+  version: 0.0.0-dev
+  description: |-
+    An unofficial description of the private API behind the YAZIO food-diary app,
+    covering version 22 of the API at https://yzapi.yazio.com.
+
+    Not published, endorsed or supported by YAZIO. The API is private and can
+    change without notice; using it is subject to YAZIO's terms of service.
+
+    This description is *inferred from captured traffic*, not written from
+    documentation. An endpoint the app never called while it was being recorded
+    does not appear here, and a field that happened to be null throughout is
+    typed from that null. Treat it as a field guide rather than a contract.
+
+    ## Calling it
+
+    The API refuses any request whose client version it does not recognise,
+    answering `403 {"error":"version_blocked"}` on every endpoint except the
+    token exchange. The version is carried in the User-Agent rather than in a
+    header of its own, so every request needs one the API accepts. The string
+    the captured app sent is:
+
+    ```
+    YAZIO/26.30.1 (com.yazio.ios.YAZIO; build:2607271240; iOS 27.0.0) Ktor
+    ```
+
+    It will need bumping whenever YAZIO retires that app version; a sudden wall
+    of 403s from everywhere but `/v22/oauth/token` is the symptom.
+
+    `Accept-Language` is not decorative either: product search is ranked by it,
+    so it decides whether a German user searching "Quark" gets German results.
+
+    Source and issues: https://github.com/yazio-community/yazio-api-specification
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  x-api-version: 22
+servers:
+  - url: https://yzapi.yazio.com
+    description: The default server
+tags:
+  - name: Authentication
+    description: OAuth token issuance and refresh.
+  - name: User
+    description: Account profile, settings, preferences and account-level state.
+  - name: Goals
+    description: Daily nutrition, activity and body goals.
+  - name: Diary
+    description: Daily log of consumed items, water intake, feelings and meal images.
+  - name: Body Values
+    description: Weight and other tracked body measurements.
+  - name: Activity
+    description: Exercises, steps and activity energy.
+  - name: Products
+    description: Food product lookup and suggestions.
+  - name: Recipes
+    description: User-created and YAZIO recipes, plus recipe favorites.
+  - name: Fasting
+    description: Fasting countdown templates, active countdowns and history.
+  - name: Buddies
+    description: Buddy list and shared buddy progress.
+  - name: Streaks
+    description: Tracking streaks and streak recovery.
+  - name: Rewards & Shop
+    description: Wallet currencies, claimables and shop items.
+  - name: Subscriptions
+    description: Premium subscription state and history.
+  - name: Insights
+    description: AI-generated daily and meal-summary tips.
+  - name: Widgets
+    description: Aggregated summaries for home-screen widgets.
+  - name: Content
+    description: Editorial content such as recipe indexes and success stories.
+paths:
+  /v22/user/pending-notifications/flush:
+    post:
+      tags:
+        - User
+      operationId: flushPendingNotifications
+      summary: Deliver and clear queued notifications
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingNotifications'
+  /v22/user:
+    get:
+      tags:
+        - User
+      operationId: getUser
+      summary: The authenticated user's profile
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+  /v22/fasting-countdowns/templates:
+    get:
+      tags:
+        - Fasting
+      operationId: listFastingTemplates
+      summary: Available fasting plans
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FastingTemplateCategory'
+      parameters:
+        - name: energyunit
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/fasting-countdowns/history:
+    get:
+      tags:
+        - Fasting
+      operationId: getFastingHistory
+      summary: Completed fasting periods
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+  /v22/user/fasting-countdowns:
+    get:
+      tags:
+        - Fasting
+      operationId: getFastingCountdowns
+      summary: The user's active fasting countdowns
+      responses:
+        '200':
+          description: OK
+          content: {}
+  /v22/user/changes-indicator:
+    get:
+      tags:
+        - User
+      operationId: getChangesIndicator
+      summary: Timestamps telling a client what to re-fetch
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChangesIndicator'
+  /v22/user/wallet:
+    get:
+      tags:
+        - Rewards & Shop
+      operationId: getWallet
+      summary: The user's credit balance
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+  /v22/user/claimables:
+    get:
+      tags:
+        - Rewards & Shop
+      operationId: listClaimables
+      summary: Rewards waiting to be claimed
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Claimables'
+  /v22/buddies:
+    get:
+      tags:
+        - Buddies
+      operationId: listBuddies
+      summary: List the user's buddies
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /v22/user/exercises:
+    get:
+      tags:
+        - Activity
+      operationId: listExercises
+      summary: List logged exercises for a day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExerciseLog'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+    post:
+      tags:
+        - Activity
+      operationId: logExercise
+      summary: Log an exercise
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExerciseEntry'
+  /v22/user/subscription/latest:
+    get:
+      tags:
+        - Subscriptions
+      operationId: getLatestSubscription
+      summary: The most recent subscription record
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscription'
+  /v22/buddies/{id}:
+    get:
+      tags:
+        - Buddies
+      operationId: getBuddy
+      summary: A buddy's profile and recent activity
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Buddy'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/widgets/daily-summary:
+    get:
+      tags:
+        - Widgets
+      operationId: getDailySummaryWidget
+      summary: The home screen daily summary
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailySummaryWidget'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/consumed-items:
+    get:
+      tags:
+        - Diary
+      operationId: listConsumedItems
+      summary: Everything logged for a day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumedItems'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+    post:
+      tags:
+        - Diary
+      operationId: addConsumedItems
+      summary: Log products, recipe portions or simple entries
+      responses:
+        '204':
+          description: Written
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumedItems'
+    delete:
+      tags:
+        - Diary
+      operationId: deleteConsumedItem
+      summary: Remove one logged entry
+      responses:
+        '204':
+          description: Removed
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumedItemsDeletion'
+  /v22/user/water-intake:
+    get:
+      tags:
+        - Diary
+      operationId: getWaterIntake
+      summary: Water logged for a day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WaterIntake'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+    post:
+      tags:
+        - Diary
+      operationId: setWaterIntake
+      summary: Set the water logged for a day
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/WaterIntakeEntry'
+  /v22/user/feeling:
+    get:
+      tags:
+        - Diary
+      operationId: getFeeling
+      summary: The feeling logged for a day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Feeling'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/bodyvalues/weight/last:
+    get:
+      tags:
+        - Body Values
+      operationId: getLatestWeight
+      summary: The most recent weight entry on or before a date
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeightEntry'
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+  /v22/user/meal-images/{date}:
+    get:
+      tags:
+        - Diary
+      operationId: listMealImages
+      summary: Meal photos for a day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealImages'
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/goals/unmodified:
+    get:
+      tags:
+        - Goals
+      operationId: getUnmodifiedGoals
+      summary: Daily goals as calculated, before any manual override
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyGoals'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/goals:
+    get:
+      tags:
+        - Goals
+      operationId: getGoals
+      summary: The user's daily goals
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailyGoals'
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/consumed-items/nutrients-daily:
+    get:
+      tags:
+        - Diary
+      operationId: getDailyNutrients
+      summary: Nutrient totals per day
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailyNutrients'
+      parameters:
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/exercises/summary-daily:
+    get:
+      tags:
+        - Activity
+      operationId: getDailyExerciseSummary
+      summary: Daily totals of logged exercise
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DailyExerciseSummary'
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/products/suggested:
+    get:
+      tags:
+        - Products
+      operationId: listSuggestedProducts
+      summary: Products suggested for a meal slot
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SuggestedProduct'
+      parameters:
+        - name: daytime
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/products/{id}:
+    get:
+      tags:
+        - Products
+      operationId: getProduct
+      summary: A product and its nutrients
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+    options:
+      tags:
+        - Products
+      operationId: getProductOptions
+      summary: Allowed methods for a product resource
+      responses:
+        '200':
+          description: OK
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/recipes:
+    post:
+      tags:
+        - Recipes
+      operationId: createUserRecipe
+      summary: Create a recipe
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeDraft'
+    get:
+      tags:
+        - Recipes
+      operationId: listUserRecipes
+      summary: Recipes the user created
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+  /v22/user/recipes/{id}:
+    delete:
+      tags:
+        - Recipes
+      operationId: deleteUserRecipe
+      summary: Delete one of the user's recipes
+      responses:
+        '204':
+          description: Removed
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/recipes/{id}:
+    get:
+      tags:
+        - Recipes
+      operationId: getRecipe
+      summary: A public recipe
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Recipe'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/products/search:
+    get:
+      tags:
+        - Products
+      operationId: searchProducts
+      summary: Search products by text or barcode
+      description: Free-text or barcode search. Results are ranked by the request's `Accept-Language`, so the same query answers differently for a German and an English client.
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductSearchResult'
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: sex
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: countries
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: locales
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/claimables/autoclaim:
+    post:
+      tags:
+        - Rewards & Shop
+      operationId: autoclaimRewards
+      summary: Claim every outstanding reward
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AutoclaimRequest'
+  /v22/user/streak/{date}:
+    post:
+      tags:
+        - Streaks
+      operationId: updateStreak
+      summary: Record streak activity for a date
+      responses:
+        '200':
+          description: OK
+          content: {}
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StreakUpdate'
+  /v22/user/subscription:
+    get:
+      tags:
+        - Subscriptions
+      operationId: getSubscription
+      summary: The user's subscription state
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscription'
+  /v22/user/insight/meal-summary-tips:
+    post:
+      tags:
+        - Insights
+      operationId: requestMealSummaryTips
+      summary: Coaching tips about a logged meal
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MealSummaryTipsRequest'
+  /v22/user/insight/meal-summary-tips/{id}:
+    get:
+      tags:
+        - Insights
+      operationId: getMealSummaryTip
+      summary: One meal summary tip by id
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MealSummaryTips'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/bodyvalues:
+    post:
+      tags:
+        - Body Values
+      operationId: createBodyValue
+      summary: Record a body value
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodyValueEntry'
+    delete:
+      tags:
+        - Body Values
+      operationId: deleteBodyValue
+      summary: Delete a body value
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+  /v22/user/bodyvalues/{id}:
+    put:
+      tags:
+        - Body Values
+      operationId: updateBodyValue
+      summary: Replace a body value
+      responses:
+        '200':
+          description: OK
+          content: {}
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BodyValueUpdate'
+  /v22/user/streak:
+    get:
+      tags:
+        - Streaks
+      operationId: getStreak
+      summary: The user's current logging streak
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StreakCalendar'
+  /v22/user/shop/items:
+    get:
+      tags:
+        - Rewards & Shop
+      operationId: listShopItems
+      summary: Items purchasable with wallet credit
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShopItems'
+  /v22/user/insight/daily-tips:
+    post:
+      tags:
+        - Insights
+      operationId: requestDailyTips
+      summary: Daily coaching tips
+      responses:
+        '200':
+          description: OK
+          content: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DailyTipsRequest'
+  /v22/user/third-party-integration:
+    get:
+      tags:
+        - User
+      operationId: getThirdPartyIntegration
+      summary: Connected third-party services
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ThirdPartyIntegration'
+  /v22/oauth/token:
+    post:
+      tags:
+        - Authentication
+      operationId: createToken
+      summary: Exchange credentials or a refresh token for a bearer token
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OAuthToken'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OAuthTokenRequest'
+  /content/v2/recipes/{country_code}:
+    get:
+      tags:
+        - Content
+      operationId: listFeaturedRecipes
+      summary: Editorial recipe collections for a country
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RecipeIndexEntry'
+      parameters:
+        - name: country_code
+          in: path
+          required: true
+          schema:
+            type: string
+  /v22/user/favorites/recipe:
+    get:
+      tags:
+        - Recipes
+      operationId: listFavoriteRecipes
+      summary: Recipes the user favourited
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+  /v22/user/settings:
+    get:
+      tags:
+        - User
+      operationId: getSettings
+      summary: The user's app settings
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserSettings'
+  /v22/user/crm/initialize:
+    post:
+      tags:
+        - User
+      operationId: initializeCrm
+      summary: Register the client with the CRM
+      responses:
+        '200':
+          description: OK
+          content: {}
+  /content/v2/success-stories:
+    get:
+      tags:
+        - Content
+      operationId: listSuccessStories
+      summary: Editorial success stories
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items: {}
+      parameters:
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sex
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: goal
+          in: query
+          required: false
+          schema:
+            type: string
+  /v22/user/key-value-store:
+    get:
+      tags:
+        - User
+      operationId: getKeyValueStore
+      summary: Arbitrary client-stored settings
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KeyValueStore'
+  /v22/user/dietary-preferences:
+    get:
+      tags:
+        - User
+      operationId: getDietaryPreferences
+      summary: Diet and food preferences
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietaryPreferences'
+  /v22/user/unlocked-features:
+    get:
+      tags:
+        - User
+      operationId: getUnlockedFeatures
+      summary: Features the account has
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnlockedFeatures'
+components:
+  schemas:
+    PendingNotifications:
+      type: object
+      properties:
+        items:
+          type: array
+          items: {}
+    UserProfile:
+      type: object
+      properties:
+        first_name:
+          type: string
+        last_name:
+          type: object
+          nullable: true
+        sex:
+          type: string
+        city:
+          type: object
+          nullable: true
+        country:
+          type: string
+        language:
+          type: string
+        timezone_offset:
+          type: number
+        food_database_country:
+          type: string
+        goal:
+          type: string
+        activity_degree:
+          type: string
+        weight_change_per_week:
+          type: number
+        unit_length:
+          type: string
+        unit_mass:
+          type: string
+        unit_energy:
+          type: string
+        unit_glucose:
+          type: string
+        unit_serving:
+          type: string
+        stripe_customer_id:
+          type: string
+        diet:
+          type: object
+          properties:
+            name:
+              type: string
+            carb_percentage:
+              type: number
+            fat_percentage:
+              type: number
+            protein_percentage:
+              type: number
+        registration_date:
+          type: string
+        reset_date:
+          type: string
+        profile_image:
+          type: object
+          nullable: true
+        user_token:
+          type: string
+        email_confirmation_status:
+          type: string
+        newsletter_opt_in:
+          type: boolean
+        login_type:
+          type: string
+        siwa_user_id:
+          type: object
+          nullable: true
+        premium_type:
+          type: string
+        start_weight:
+          type: number
+        uuid:
+          type: string
+        body_height:
+          type: number
+        date_of_birth:
+          type: string
+        email:
+          type: string
+        tags:
+          type: array
+          items: {}
+    FastingParticipants:
+      type: object
+      properties:
+        initial_number_of_participants:
+          type: number
+        growth_per_year:
+          type: number
+        growth_start:
+          type: string
+    FastingPeriodBoundary:
+      type: object
+      properties:
+        day:
+          type: number
+        time:
+          type: string
+    FastingTip:
+      type: object
+      properties:
+        emoji:
+          type: string
+        text:
+          type: string
+    FastingTemplate:
+      type: object
+      properties:
+        key:
+          type: string
+        fasting_periods:
+          type: array
+          items:
+            type: object
+            properties:
+              start:
+                $ref: '#/components/schemas/FastingPeriodBoundary'
+              end:
+                $ref: '#/components/schemas/FastingPeriodBoundary'
+        fasting_days:
+          type: array
+          items: {}
+        preset:
+          type: object
+          nullable: true
+        fasting_tips:
+          type: array
+          items:
+            $ref: '#/components/schemas/FastingTip'
+    FastingTemplateGroup:
+      type: object
+      properties:
+        group_name:
+          type: string
+        participants:
+          $ref: '#/components/schemas/FastingParticipants'
+        cycle_duration_in_days:
+          type: number
+        emoji:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        teaser:
+          type: string
+        goals:
+          type: array
+          items:
+            type: string
+        flexibility:
+          type: string
+        difficulty:
+          type: string
+        fasting_calorie_goal:
+          type: object
+          nullable: true
+        free:
+          type: boolean
+        type:
+          type: string
+        teaser_position:
+          type: object
+          nullable: true
+        templates:
+          type: array
+          items:
+            $ref: '#/components/schemas/FastingTemplate'
+    FastingTemplateCategory:
+      type: object
+      properties:
+        name:
+          type: string
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/FastingTemplateGroup'
+    ChangesIndicator:
+      type: object
+      properties:
+        exercises:
+          type: number
+        body_values:
+          type: number
+        consumed_items:
+          type: number
+    Wallet:
+      type: object
+      properties:
+        currencies:
+          type: array
+          items:
+            type: object
+            properties:
+              currency:
+                type: string
+              quantity:
+                type: number
+    Claimables:
+      type: object
+      properties:
+        claimables:
+          type: array
+          items: {}
+    ExerciseLog:
+      type: object
+      properties:
+        training:
+          type: array
+          items: {}
+        custom_training:
+          type: array
+          items: {}
+        activity:
+          type: object
+          properties:
+            energy:
+              type: number
+            distance:
+              type: number
+            duration:
+              type: number
+            source:
+              type: object
+              nullable: true
+            gateway:
+              type: string
+            steps:
+              type: number
+    ExerciseEntry:
+      type: object
+      properties:
+        activity:
+          type: array
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+              energy:
+                type: number
+              steps:
+                type: number
+              distance:
+                type: number
+              gateway:
+                type: string
+    Subscription:
+      type: object
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+        gateway:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+        payment_provider_transaction_id:
+          type: string
+        last_status_change_at:
+          type: string
+        base_plan_id:
+          type: object
+          nullable: true
+    BuddyExercise:
+      type: object
+      properties:
+        steps:
+          type: number
+        calories:
+          type: number
+    StreakDay:
+      type: object
+      properties:
+        daytimes:
+          type: array
+          items:
+            type: string
+        streak_count:
+          type: number
+        freeze_count:
+          type: number
+        origin_of_recovery:
+          type: string
+    StreakCalendar:
+      type: object
+      properties:
+        '1970-01-01':
+          $ref: '#/components/schemas/StreakDay'
+    Buddy:
+      type: object
+      properties:
+        user_uuid:
+          type: string
+        name:
+          type: string
+        energy_goal:
+          type: number
+        protein_goal:
+          type: number
+        carb_goal:
+          type: number
+        fat_goal:
+          type: number
+        consumed_energy:
+          type: number
+        consumed_protein:
+          type: number
+        consumed_carb:
+          type: number
+        consumed_fat:
+          type: number
+        water_intake_goal:
+          type: number
+        goal:
+          type: string
+        start_weight:
+          type: number
+        weight_goal:
+          type: number
+        weight:
+          type: number
+        date_of_birth:
+          type: string
+        favorite_recipes:
+          type: array
+          items:
+            type: string
+        exercises:
+          type: array
+          items:
+            $ref: '#/components/schemas/BuddyExercise'
+        sex:
+          type: string
+        weight_change_per_week:
+          type: number
+        consume_activity_calories:
+          type: boolean
+        streak:
+          $ref: '#/components/schemas/StreakCalendar'
+    DailyGoals:
+      type: object
+      properties:
+        energy.energy:
+          type: number
+        water:
+          type: number
+        activity.step:
+          type: number
+        nutrient.protein:
+          type: number
+        nutrient.fat:
+          type: number
+        nutrient.carb:
+          type: number
+        bodyvalue.weight:
+          type: number
+    NutrientSummary:
+      type: object
+      properties:
+        energy.energy:
+          type: number
+        nutrient.carb:
+          type: number
+        nutrient.fat:
+          type: number
+        nutrient.protein:
+          type: number
+    MealSummary:
+      type: object
+      properties:
+        energy_goal:
+          type: number
+        nutrients:
+          $ref: '#/components/schemas/NutrientSummary'
+    DailySummaryWidget:
+      type: object
+      properties:
+        activity_energy:
+          type: number
+        consume_activity_energy:
+          type: boolean
+        steps:
+          type: number
+        water_intake:
+          type: number
+        goals:
+          $ref: '#/components/schemas/DailyGoals'
+        units:
+          type: object
+          properties:
+            unit_mass:
+              type: string
+            unit_energy:
+              type: string
+            unit_serving:
+              type: string
+            unit_length:
+              type: string
+        meals:
+          type: object
+          properties:
+            breakfast:
+              $ref: '#/components/schemas/MealSummary'
+            lunch:
+              $ref: '#/components/schemas/MealSummary'
+            dinner:
+              $ref: '#/components/schemas/MealSummary'
+            snack:
+              $ref: '#/components/schemas/MealSummary'
+        user:
+          type: object
+          properties:
+            start_weight:
+              type: number
+            current_weight:
+              type: number
+            goal:
+              type: string
+            sex:
+              type: string
+        active_fasting_countdown_template_key:
+          type: object
+          nullable: true
+    ConsumedRecipePortion:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+        daytime:
+          type: string
+        type:
+          type: string
+        recipe_id:
+          type: string
+        portion_count:
+          type: number
+    ConsumedItems:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              serving:
+                type: string
+                nullable: true
+              amount:
+                type: number
+              daytime:
+                type: string
+              date:
+                type: string
+              type:
+                type: string
+              product_id:
+                type: string
+              serving_quantity:
+                type: number
+                nullable: true
+        recipe_portions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConsumedRecipePortion'
+        simple_products:
+          type: array
+          items: {}
+    ConsumedItemsDeletion:
+      description: Body of DELETE /v22/user/consumed-items. Each property names one entry by id, as a single string rather than a list — passing an array is rejected with "This value should be of type string". Note that the endpoint also accepts an `?id=` query parameter, answers 204, and does nothing at all.
+      type: object
+      properties:
+        products:
+          type: string
+        recipe_portions:
+          type: string
+        simple_products:
+          type: string
+    WaterIntake:
+      type: object
+      properties:
+        water_intake:
+          type: number
+        gateway:
+          type: object
+          nullable: true
+        source:
+          type: object
+          nullable: true
+    WaterIntakeEntry:
+      type: object
+      properties:
+        date:
+          type: string
+        water_intake:
+          type: number
+    Feeling:
+      type: object
+      properties:
+        note:
+          type: object
+          nullable: true
+        tags:
+          type: array
+          items: {}
+    WeightEntry:
+      type: object
+      properties:
+        date:
+          type: string
+        id:
+          type: string
+        value:
+          type: number
+        external_id:
+          type: object
+          nullable: true
+        gateway:
+          type: string
+        source:
+          type: object
+          nullable: true
+    MealImages:
+      type: object
+      properties: {}
+    DailyNutrients:
+      type: object
+      properties:
+        date:
+          type: string
+        energy:
+          type: number
+        carb:
+          type: number
+        protein:
+          type: number
+        fat:
+          type: number
+        energy_goal:
+          type: number
+    DailyExerciseSummary:
+      type: object
+      properties:
+        date:
+          type: string
+        duration:
+          type: number
+        steps:
+          type: number
+        energy:
+          type: number
+    SuggestedProduct:
+      type: object
+      properties:
+        product_id:
+          type: string
+        amount:
+          type: number
+        serving:
+          type: string
+        serving_quantity:
+          type: number
+    Product:
+      description: Response of GET /v22/products/{id}. Absent from the capture, which only recorded an OPTIONS preflight; filled in from a live response. Note that the body carries no id of its own.
+      type: object
+      properties:
+        name:
+          type: string
+        producer:
+          type: string
+          nullable: true
+        category:
+          type: string
+        base_unit:
+          type: string
+        is_verified:
+          type: boolean
+        is_private:
+          type: boolean
+        is_deleted:
+          type: boolean
+        has_ean:
+          type: boolean
+        nutrients:
+          type: object
+          additionalProperties:
+            type: number
+        servings:
+          type: array
+          items:
+            type: object
+            properties:
+              serving:
+                type: string
+              amount:
+                type: number
+        eans:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        updated_at:
+          type: string
+    RecipeDraft:
+      type: object
+      properties:
+        nutrients:
+          type: object
+          properties:
+            nutrient.salt:
+              type: number
+            nutrient.monounsaturated:
+              type: number
+            nutrient.sugar:
+              type: number
+            mineral.calcium:
+              type: number
+            nutrient.saturated:
+              type: number
+            vitamin.b6:
+              type: number
+            nutrient.protein:
+              type: number
+            nutrient.dietaryfiber:
+              type: number
+            energy.energy:
+              type: number
+            nutrient.polyunsaturated:
+              type: number
+            nutrient.fat:
+              type: number
+            nutrient.carb:
+              type: number
+        portion_count:
+          type: integer
+        servings:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            properties:
+              amount:
+                type: number
+              serving:
+                type: string
+              producer:
+                type: string
+              name:
+                type: string
+              serving_quantity:
+                type: number
+              base_unit:
+                type: string
+              product_id:
+                type: string
+        instructions:
+          type: array
+          items:
+            type: string
+        name:
+          type: string
+        id:
+          type: string
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+        yazio_id:
+          type: object
+          nullable: true
+        locale:
+          type: string
+        name:
+          type: string
+        portion_count:
+          type: number
+        nutrients:
+          type: object
+          properties:
+            energy.energy:
+              type: number
+            mineral.arsenic:
+              type: number
+            mineral.boron:
+              type: number
+            mineral.calcium:
+              type: number
+            mineral.chlorine:
+              type: number
+            mineral.chrome:
+              type: number
+            mineral.copper:
+              type: number
+            mineral.fluoride:
+              type: number
+            mineral.fluorine:
+              type: number
+            mineral.iodine:
+              type: number
+            mineral.iron:
+              type: number
+            mineral.magnesium:
+              type: number
+            mineral.manganese:
+              type: number
+            mineral.phosphorus:
+              type: number
+            mineral.potassium:
+              type: number
+            mineral.selenium:
+              type: number
+            mineral.sulfur:
+              type: number
+            mineral.zinc:
+              type: number
+            nutrient.alcohol:
+              type: number
+            nutrient.carb:
+              type: number
+            nutrient.cholesterol:
+              type: number
+            nutrient.dietaryfiber:
+              type: number
+            nutrient.fat:
+              type: number
+            nutrient.monounsaturated:
+              type: number
+            nutrient.polyunsaturated:
+              type: number
+            nutrient.protein:
+              type: number
+            nutrient.salt:
+              type: number
+            nutrient.saturated:
+              type: number
+            nutrient.sodium:
+              type: number
+            nutrient.sugar:
+              type: number
+            nutrient.water:
+              type: number
+            vitamin.a:
+              type: number
+            vitamin.b1:
+              type: number
+            vitamin.b11:
+              type: number
+            vitamin.b12:
+              type: number
+            vitamin.b2:
+              type: number
+            vitamin.b3:
+              type: number
+            vitamin.b5:
+              type: number
+            vitamin.b6:
+              type: number
+            vitamin.b7:
+              type: number
+            vitamin.c:
+              type: number
+            vitamin.d:
+              type: number
+            vitamin.e:
+              type: number
+            vitamin.k:
+              type: number
+        image:
+          type: object
+          nullable: true
+        servings:
+          type: array
+          items:
+            type: object
+            properties:
+              producer:
+                type: string
+              name:
+                type: string
+              amount:
+                type: number
+              serving:
+                type: object
+                nullable: true
+              serving_quantity:
+                type: object
+                nullable: true
+              base_unit:
+                type: string
+              note:
+                type: object
+                nullable: true
+              product_id:
+                type: string
+        instructions:
+          type: array
+          items: {}
+        is_yazio_recipe:
+          type: boolean
+        available_since:
+          type: object
+          nullable: true
+        is_pro_recipe:
+          type: boolean
+    ProductSearchResult:
+      type: object
+      properties:
+        score:
+          type: number
+        name:
+          type: string
+        product_id:
+          type: string
+        serving:
+          type: string
+        serving_quantity:
+          type: number
+        amount:
+          type: number
+        base_unit:
+          type: string
+        producer:
+          type: string
+        is_verified:
+          type: boolean
+        nutrients:
+          $ref: '#/components/schemas/NutrientSummary'
+        countries:
+          type: array
+          items:
+            type: string
+        language:
+          type: string
+    AutoclaimRequest:
+      type: object
+      properties:
+        user_date:
+          type: string
+        type:
+          type: string
+    StreakUpdate:
+      type: object
+      properties:
+        daytimes:
+          type: array
+          items:
+            type: string
+        streak_count:
+          type: number
+        freeze_count:
+          type: number
+    MealSummaryTipsRequest:
+      type: object
+      properties:
+        request_uuid:
+          type: string
+        device_uuid:
+          type: string
+        app_version:
+          type: string
+        platform:
+          type: string
+        session_id:
+          type: string
+        delivery_mode:
+          type: string
+        experiments:
+          type: array
+          items: {}
+        requested_at:
+          type: number
+        date:
+          type: string
+        mealtime:
+          type: string
+        language:
+          type: string
+    MealSummaryTips:
+      type: object
+      properties:
+        tips:
+          type: array
+          items:
+            type: string
+    BodyValueEntry:
+      type: object
+      properties:
+        weight:
+          type: array
+          items:
+            type: object
+            properties:
+              value:
+                type: number
+              date:
+                type: string
+              id:
+                type: string
+    BodyValueUpdate:
+      type: object
+      properties:
+        value:
+          type: number
+    ShopItems:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              shop_item_type:
+                type: string
+              currency_type:
+                type: string
+              currency_quantity:
+                type: number
+    DailyTipsRequest:
+      type: object
+      properties:
+        request_uuid:
+          type: string
+        device_uuid:
+          type: string
+        app_version:
+          type: string
+        platform:
+          type: string
+        session_id:
+          type: string
+        delivery_mode:
+          type: string
+        experiments:
+          type: array
+          items:
+            type: object
+            properties:
+              variant:
+                type: string
+              experiment:
+                type: string
+        requested_at:
+          type: number
+        language:
+          type: string
+    ThirdPartyIntegration:
+      type: object
+      properties:
+        required_actions:
+          type: array
+          items: {}
+        active_gateway:
+          type: string
+    OAuthTokenRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: The account's email address.
+        password:
+          type: string
+        grant_type:
+          type: string
+          description: '`password` to exchange credentials for a token, `refresh_token` to renew one.'
+          example: password
+        client_id:
+          type: string
+          description: The client id the mobile app ships with. Identifies the app rather than the user; every install sends the same value.
+          example: 3_5rbw4kehpugw8ogsc8ck8oo4ogswgckcskc04gcg8kk8k48ssw
+        client_secret:
+          type: string
+          description: The client secret the mobile app ships with. Not a per-user secret; see `client_id`.
+          example: 25gdtt1hvdi8gwowoww4oo88sgsw0oo04o0og0kkgwwks8k0k
+    OAuthToken:
+      type: object
+      properties:
+        access_token:
+          type: string
+        expires_in:
+          type: number
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+    RecipeIndexEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        lastChanged:
+          type: number
+    UserSettings:
+      type: object
+      properties:
+        has_water_tracker:
+          type: boolean
+        has_diary_tipps:
+          type: boolean
+        has_meal_reminders:
+          type: boolean
+        has_usage_reminders:
+          type: boolean
+        has_weight_reminders:
+          type: boolean
+        has_water_reminders:
+          type: boolean
+        consume_activity_calories:
+          type: boolean
+        has_feelings:
+          type: boolean
+        has_fasting_tracker_reminders:
+          type: boolean
+        has_fasting_stage_reminders:
+          type: boolean
+    KeyValueStore:
+      type: object
+      properties:
+        StreakRepairRemoteKey:
+          type: string
+    DietaryPreferences:
+      type: object
+      properties:
+        restriction:
+          type: object
+          nullable: true
+    UnlockedFeatures:
+      type: object
+      properties:
+        unlocked_features:
+          type: array
+          items:
+            type: object
+            properties:
+              feature:
+                type: string
+              origin:
+                type: string
+              expire_date_time_utc:
+                type: string
+x-path-templates: []

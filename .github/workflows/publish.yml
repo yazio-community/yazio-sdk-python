@@ -1,0 +1,104 @@
+name: Publish SDK
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate the package
+        # src/yazio_sdk/ is not committed — the spec is. Generating here rather
+        # than shipping a committed tree means the artifact provably comes from
+        # spec/openapi.yaml at this commit, and _version.py is written in the
+        # same step that the version check below reads.
+        #
+        # Its last step imports every module it wrote. That is the gate before
+        # something irreversible: a PyPI version cannot be re-uploaded, so a
+        # package that does not import costs a tag if caught here, and the
+        # version number permanently if caught after upload.
+        run: |
+          pip install openapi-python-client==0.29.0 python-dateutil PyYAML ruff
+          bash scripts/generate.sh
+
+      - name: Check the tag matches the generated version
+        # The version is not written in pyproject.toml — it comes from
+        # src/yazio_sdk/_version.py, which scripts/generate.sh writes from the
+        # spec's info.version. So this checks three things at once: that the tag
+        # matches the code, that the code matches the spec it was generated
+        # from, and that nobody tagged a checkout they forgot to regenerate.
+        #
+        # It matters because PyPI will not let you re-upload a version to fix it.
+        #
+        # 0.0.0-dev is what the spec repo's bundle carries between releases. A
+        # checkout generated from one never went through that repo's release
+        # workflow, so publishing it would put a version on PyPI that no spec
+        # release corresponds to.
+        run: |
+          version=$(uvx hatch version)
+          tag="${GITHUB_REF_NAME#v}"
+
+          case "$version" in
+            *dev*)
+              echo "::error::refusing to publish $version — regenerate from a spec release first"
+              exit 1
+              ;;
+          esac
+
+          if [ "$tag" != "$version" ]; then
+            echo "::error::tag v$tag does not match generated version $version"
+            echo "the spec in spec/openapi.yaml pins $version — tag v$version instead"
+            exit 1
+          fi
+
+          echo "publishing $version"
+
+      - run: uv build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: build
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      # Trusted publishing: PyPI verifies this workflow's OIDC identity, so
+      # there is no API token to store or rotate. The publisher is configured
+      # against this filename and this environment name, so renaming either
+      # breaks authentication with a fairly unhelpful error.
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Rehearsal target. Delete this line to publish to real PyPI — and
+          # note the two are separate accounts with separate pending
+          # publishers, so the one on TestPyPI does not carry over.
+          repository-url: https://test.pypi.org/legacy/
+
+  release:
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

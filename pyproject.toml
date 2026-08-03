@@ -1,0 +1,73 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "yazio-sdk"
+# The version is the spec's version, and is not written here at all.
+# scripts/generate.sh reads `info.version` out of spec/openapi.yaml and writes
+# src/yazio_sdk/_version.py; hatchling reads it back from there. So the
+# published version always equals the spec release the code was generated from,
+# and the two cannot drift because there is only one place to change.
+#
+# An SDK rebuild with no spec change (generator upgrade, packaging fix) ships as
+# a PEP 440 post-release of the same spec version, e.g. 1.4.2.post1.
+dynamic = ["version"]
+description = "Generated Python client for the private YAZIO API"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{ name = "the yazio-community contributors" }]
+keywords = ["yazio", "openapi", "nutrition", "food-diary", "api-client"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Typing :: Typed",
+]
+
+# These are what openapi-python-client's output imports. Keep in step with
+# shell.nix, which is what local work actually runs against.
+dependencies = [
+  "httpx>=0.23,<0.29",
+  "attrs>=22.2",
+  "python-dateutil>=2.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/yazio-community/yazio-sdk-python"
+Specification = "https://github.com/yazio-community/yazio-api-specification"
+Issues = "https://github.com/yazio-community/yazio-sdk-python/issues"
+
+[dependency-groups]
+dev = ["ruff>=0.6"]
+
+[tool.hatch.version]
+# Written by scripts/generate.sh from the spec's info.version. Hatchling's
+# default pattern picks up the `__version__` assignment in this file.
+path = "src/yazio_sdk/_version.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/yazio_sdk"]
+
+[tool.ruff]
+# `line-length` here is load-bearing for the *generated* output, not just for
+# our own files: openapi-python-client runs `ruff format` over what it emits as
+# a post-hook, and ruff finds this config by walking up from src/. Changing it
+# reformats every generated module on the next `make generate`.
+line-length = 100
+
+# Keeps `ruff check .` off the generated tree — its style is the generator's
+# business, and lint findings there cannot be fixed without editing generated
+# files. Note this does *not* stop the generator's own post-hook: ruff honours
+# explicitly named paths over excludes, which is what makes the above apply.
+extend-exclude = ["src/"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

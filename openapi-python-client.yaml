@@ -1,0 +1,23 @@
+# Configuration for openapi-python-client (see scripts/generate.sh).
+#
+# Both names are pinned rather than derived from info.title. The spec's title is
+# "YAZIO API", which would produce something close to these anyway — but the
+# distribution name is what people `pip install`, and it should not be able to
+# change because someone reworded a title upstream.
+project_name_override: yazio-sdk
+package_name_override: yazio_sdk
+
+# Endpoints are grouped by the first tag only. The spec assigns exactly one tag
+# per operation, which keeps api/<tag>/ directories clean; a second tag would
+# scatter one endpoint across two of them.
+generate_all_tags: false
+
+# Disambiguates the inline models that are left. Most response bodies now
+# resolve to a named entry under components/schemas and are named from the
+# component key, but anything still declared inline falls back to a name built
+# from the path it appears under — which is what keeps two unrelated inline
+# objects from colliding.
+use_path_prefixes_for_title_model_names: true
+
+# The API fronts a live mobile backend; some endpoints are slow.
+http_timeout: 30
