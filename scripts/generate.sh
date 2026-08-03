@@ -43,6 +43,12 @@ PY
 
 echo "==> generating $package/ from $spec (spec version $spec_version)"
 
+# Nothing under src/ is committed — the package is generated and gitignored —
+# and git cannot track an empty directory, so a fresh clone has no src/ at all.
+# openapi-python-client creates its output directory with a plain os.mkdir,
+# which fails rather than creating the parent, so make the parent here.
+mkdir -p "$(dirname "$package")"
+
 # --meta=none emits just the importable package, no pyproject or setup.py of its
 # own — this repo's pyproject.toml owns the packaging. With --meta=none the
 # output path *is* the package directory, hence src/yazio_sdk rather than src/.
