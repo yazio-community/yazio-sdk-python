@@ -14,19 +14,22 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Generate the package
-        # src/yazio_sdk/ is not committed — the spec is. Generating here rather
-        # than shipping a committed tree means the artifact provably comes from
-        # spec/openapi.yaml at this commit, and _version.py is written in the
-        # same step that the version check below reads.
+      - name: Regenerate and confirm the tag ships what its spec produces
+        # src/ is committed, so this proves the tagged tree really is what
+        # spec/openapi.yaml generates rather than something hand-edited, and
+        # generate.sh's last step imports every module.
         #
-        # Its last step imports every module it wrote. That is the gate before
-        # something irreversible: a PyPI version cannot be re-uploaded, so a
-        # package that does not import costs a tag if caught here, and the
+        # This is the gate before something irreversible: a PyPI version cannot
+        # be re-uploaded, so a bad package costs a tag if caught here and the
         # version number permanently if caught after upload.
         run: |
           pip install openapi-python-client==0.29.0 python-dateutil PyYAML ruff==0.15.22
           bash scripts/generate.sh
+          if ! git diff --quiet -- src/; then
+            echo "::error::src/ at this tag does not match spec/openapi.yaml"
+            git diff --stat -- src/
+            exit 1
+          fi
 
       - name: Check the tag matches the generated version
         # The version is not written in pyproject.toml — it comes from

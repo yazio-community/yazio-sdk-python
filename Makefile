@@ -60,9 +60,17 @@ lint:
 	ruff check .
 	ruff format --check .
 
+# src/ is committed, so regenerating on a clean checkout must change nothing.
+# If it does, either the generated tree was edited by hand or a spec was
+# committed without regenerating — both silently wrong until a release.
+#
 # There is no test suite. What would have been a smoke test is inside
-# scripts/generate.sh, which imports every generated module after writing it —
-# that is the check worth running, and it runs on every generation rather than
-# only when someone remembers to. A fresh clone has no package until this runs.
+# scripts/generate.sh, which imports every generated module after writing it.
 check: generate
+	@if ! git diff --quiet -- src/; then \
+	  echo "error: src/ does not match $(SPEC) — run 'make generate' and commit" >&2; \
+	  git diff --stat -- src/ >&2; \
+	  exit 1; \
+	fi
+	@echo "src/ is in sync with $(SPEC)"
 	$(MAKE) lint

@@ -12,16 +12,14 @@ pip install yazio-sdk
 > using it is subject to YAZIO's terms of service.
 
 > [!NOTE]
-> **`src/yazio_sdk/` is generated and is not in this repository.** It is
-> produced from
+> **`src/yazio_sdk/` is generated. Do not edit it.** It is produced from
 > [yazio-api-specification](https://github.com/yazio-community/yazio-api-specification)
-> by `openapi-python-client`, at build time, from the `spec/openapi.yaml`
-> pinned here. Bugs in the client's shape are bugs in the spec — report them
-> there.
+> by `openapi-python-client`, and the next spec release overwrites the whole
+> tree. Bugs in the client's shape are bugs in the spec — report them there.
 >
-> A clone therefore has no package until you run `make generate`, and
-> `pip install git+https://…` does **not** work. Install from PyPI, where the
-> published artifacts contain the generated code.
+> It is committed so the repository is installable and the regenerate PRs show
+> what actually changed, but it is written by CI, not by hand. CI fails if
+> regenerating produces any diff.
 
 ## Using it
 
@@ -126,12 +124,13 @@ make version    # what this checkout would publish as
 make check      # what CI runs: generate, lint
 ```
 
-`make generate` is a prerequisite for everything else: a fresh clone has no
-package until it runs.
+`make check` failing on a diff means either the generated tree was edited by
+hand or a spec was committed without regenerating. Both are fixed by
+`make generate` and committing the result.
 
 There is no test suite. `scripts/generate.sh` imports every module it wrote as
-its last step, so generating is the smoke test — and CI runs it on both ends of
-the supported Python range rather than only when someone remembers to.
+its last step, so generating is the smoke test, and CI additionally imports the
+committed package under both ends of the supported Python range.
 
 Releases are automated. When the spec repo tags a release it dispatches here,
 which opens a "Regenerate from spec vX.Y.Z" PR. That PR changes one file —
