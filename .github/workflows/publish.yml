@@ -1,4 +1,4 @@
-name: Release SDK
+name: Publish
 
 # One workflow, one path to PyPI: generate from a spec release, prove the
 # result imports, then tag, push, publish and release it.

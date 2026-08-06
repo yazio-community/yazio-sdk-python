@@ -1,5 +1,7 @@
 # yazio-sdk-python
 
+[![Publish](https://github.com/yazio-community/yazio-sdk-python/actions/workflows/publish.yml/badge.svg)](https://github.com/yazio-community/yazio-sdk-python/actions/workflows/publish.yml)
+
 A generated Python client for the private [YAZIO](https://www.yazio.com) API.
 
 ```bash
