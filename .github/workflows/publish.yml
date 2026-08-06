@@ -263,7 +263,7 @@ jobs:
           # worth a commit for the tag to point at. It is close to impossible
           # here — the version alone changes spec/openapi.yaml — but the
           # alternative is a step that fails on success.
-          git commit --allow-empty -m "Regenerate from spec ${SPEC_TAG}"
+          git commit --allow-empty -m "refactor: regenerate from spec ${SPEC_TAG}"
           git tag "v${VERSION}"
           git push --atomic origin "HEAD:${GITHUB_REF_NAME}" "refs/tags/v${VERSION}"
 
