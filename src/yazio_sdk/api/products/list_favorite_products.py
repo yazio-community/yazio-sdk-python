@@ -5,7 +5,7 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.favorite_recipe import FavoriteRecipe
+from ...models.favorite_product import FavoriteProduct
 from ...types import Response
 
 
@@ -13,7 +13,7 @@ def _get_kwargs() -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": "/v22/user/favorites/recipe",
+        "url": "/v22/user/favorites/product",
     }
 
     return _kwargs
@@ -21,12 +21,12 @@ def _get_kwargs() -> dict[str, Any]:
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> list[FavoriteRecipe] | None:
+) -> list[FavoriteProduct] | None:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
-            response_200_item = FavoriteRecipe.from_dict(response_200_item_data)
+            response_200_item = FavoriteProduct.from_dict(response_200_item_data)
 
             response_200.append(response_200_item)
 
@@ -40,7 +40,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[list[FavoriteRecipe]]:
+) -> Response[list[FavoriteProduct]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -52,15 +52,15 @@ def _build_response(
 def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[FavoriteRecipe]]:
-    """Recipes the user favourited
+) -> Response[list[FavoriteProduct]]:
+    """Products the user favourited
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[FavoriteRecipe]]
+        Response[list[FavoriteProduct]]
     """
 
     kwargs = _get_kwargs()
@@ -75,15 +75,15 @@ def sync_detailed(
 def sync(
     *,
     client: AuthenticatedClient | Client,
-) -> list[FavoriteRecipe] | None:
-    """Recipes the user favourited
+) -> list[FavoriteProduct] | None:
+    """Products the user favourited
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[FavoriteRecipe]
+        list[FavoriteProduct]
     """
 
     return sync_detailed(
@@ -94,15 +94,15 @@ def sync(
 async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
-) -> Response[list[FavoriteRecipe]]:
-    """Recipes the user favourited
+) -> Response[list[FavoriteProduct]]:
+    """Products the user favourited
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[list[FavoriteRecipe]]
+        Response[list[FavoriteProduct]]
     """
 
     kwargs = _get_kwargs()
@@ -115,15 +115,15 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: AuthenticatedClient | Client,
-) -> list[FavoriteRecipe] | None:
-    """Recipes the user favourited
+) -> list[FavoriteProduct] | None:
+    """Products the user favourited
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        list[FavoriteRecipe]
+        list[FavoriteProduct]
     """
 
     return (

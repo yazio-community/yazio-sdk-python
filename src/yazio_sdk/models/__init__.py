@@ -44,6 +44,8 @@ from .fasting_template_group_fasting_calorie_goal_type_0 import (
 from .fasting_template_group_teaser_position_type_0 import FastingTemplateGroupTeaserPositionType0
 from .fasting_template_preset_type_0 import FastingTemplatePresetType0
 from .fasting_tip import FastingTip
+from .favorite_product import FavoriteProduct
+from .favorite_recipe import FavoriteRecipe
 from .feeling import Feeling
 from .feeling_note_type_0 import FeelingNoteType0
 from .key_value_store import KeyValueStore
@@ -72,6 +74,7 @@ from .recipe_servings_item_note_type_0 import RecipeServingsItemNoteType0
 from .recipe_servings_item_serving_quantity_type_0 import RecipeServingsItemServingQuantityType0
 from .recipe_servings_item_serving_type_0 import RecipeServingsItemServingType0
 from .recipe_yazio_id_type_0 import RecipeYazioIdType0
+from .serving_unit import ServingUnit
 from .shop_items import ShopItems
 from .shop_items_items_item import ShopItemsItemsItem
 from .streak_calendar import StreakCalendar
@@ -83,6 +86,9 @@ from .suggested_product import SuggestedProduct
 from .third_party_integration import ThirdPartyIntegration
 from .unlocked_features import UnlockedFeatures
 from .unlocked_features_unlocked_features_item import UnlockedFeaturesUnlockedFeaturesItem
+from .user_product_draft import UserProductDraft
+from .user_product_draft_nutrients import UserProductDraftNutrients
+from .user_product_draft_servings_item import UserProductDraftServingsItem
 from .user_profile import UserProfile
 from .user_profile_city_type_0 import UserProfileCityType0
 from .user_profile_diet import UserProfileDiet
@@ -141,6 +147,8 @@ __all__ = (
     "FastingTemplateGroupTeaserPositionType0",
     "FastingTemplatePresetType0",
     "FastingTip",
+    "FavoriteProduct",
+    "FavoriteRecipe",
     "Feeling",
     "FeelingNoteType0",
     "KeyValueStore",
@@ -169,6 +177,7 @@ __all__ = (
     "RecipeServingsItemServingQuantityType0",
     "RecipeServingsItemServingType0",
     "RecipeYazioIdType0",
+    "ServingUnit",
     "ShopItems",
     "ShopItemsItemsItem",
     "StreakCalendar",
@@ -180,6 +189,9 @@ __all__ = (
     "ThirdPartyIntegration",
     "UnlockedFeatures",
     "UnlockedFeaturesUnlockedFeaturesItem",
+    "UserProductDraft",
+    "UserProductDraftNutrients",
+    "UserProductDraftServingsItem",
     "UserProfile",
     "UserProfileCityType0",
     "UserProfileDiet",
